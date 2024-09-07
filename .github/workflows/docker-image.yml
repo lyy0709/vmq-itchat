@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: List directory contents
-      run: ls -a
-      
     - name: Checkout repository
       uses: actions/checkout@v2
+
+    - name: List directory contents
+      run: ls -la
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
@@ -30,7 +30,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: ${{ github.workspace }}/Dockerfile
+        file: ./Dockerfile
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/vmq-itchat:latest
 
