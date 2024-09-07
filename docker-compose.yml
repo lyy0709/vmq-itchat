@@ -1,0 +1,8 @@
+version: '3.9'
+services:
+    vmq-itchat:
+        image: lyy0709/vmq-itchat:latest
+        container_name: vmq-itchat
+        volumes:
+            - ${PWD}/config.json/:/app/config.json
+        restart: unless-stopped
