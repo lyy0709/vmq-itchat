@@ -1,0 +1,6 @@
+{
+    "host": "V免签域名地址",
+    "key": "V免签回调key",
+    "webhook_url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=", //企业微信机器人
+    "paytype": "qrcode"  //或者reward
+}
