@@ -130,7 +130,7 @@ class WeChatPayMonitor:
 
                 # 判断是否是二维码微信支付通知或赞赏码通知
                 if paytype == 'qrcode':
-                    is_payment = "微信支付收款" or "个人收款码到账" in title
+                    is_payment = "微信支付收款" in title or "个人收款码到账" in title
                 elif paytype == 'reward':
                     is_payment = "二维码赞赏到账" in title
                 logger.info(f"Is this a payment message? {'Yes' if is_payment else 'No'}")
