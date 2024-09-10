@@ -28,6 +28,7 @@ except FileNotFoundError:
     raise
 
 paytype = config.get('paytype', 'qrcode')
+zzmzf = config.get('zzmzf', False)
 
 class WeChatPayMonitor:
     def __init__(self, host, key):
@@ -56,17 +57,47 @@ class WeChatPayMonitor:
             print(f"回调异常: {str(e)}")
             return False
 
+    def zzmzf_push(self, amount, pid):
+        t = str(int(time.time() * 1000))
+        sign = self.md5(f"3{amount}{t}{pid}{self.key}")
+        url = f"https://{self.host}/appPush?type=3&price={amount}&t={t}&pid={pid}&sign={sign}"
+        try:
+            response = requests.get(url)
+            logger.info(f"Push response: {response.text}")
+            response_json = response.json()
+            if response_json.get('code') == 0:
+                print(f"回调成功: 金额 {amount} 元")
+                return True
+            else:
+                print(f"回调失败: {response_json.get('msg', '未知错误')}")
+                return False
+        except Exception as e:
+            logger.error(f"Push failed: {e}")
+            print(f"回调异常: {str(e)}")
+            return False
+        
     def send_heartbeat(self):
         while True:
             t = str(int(time.time() * 1000))
             sign = self.md5(f"{t}{self.key}")
             url = f"https://{self.host}/appHeart?t={t}&sign={sign}"
             try:
-                response = requests.get(url)
+                response = requests.get(url, timeout=10)  # 设置请求超时时间为10秒
+                response.raise_for_status()  # 检查请求是否成功
                 logger.info(f"Heartbeat response: {response.text}")
-            except Exception as e:
+            except requests.exceptions.RequestException as e:
                 logger.error(f"Heartbeat failed: {e}")
-            time.sleep(60)
+                # 增加重试机制
+                for i in range(3):  # 重试3次
+                    try:
+                        response = requests.get(url, timeout=10)
+                        response.raise_for_status()
+                        logger.info(f"Heartbeat response (retry {i+1}): {response.text}")
+                        break
+                    except requests.exceptions.RequestException as retry_e:
+                        logger.error(f"Heartbeat retry {i+1} failed: {retry_e}")
+                        time.sleep(5)  # 重试前等待5秒
+            time.sleep(60)  # 每60秒发送一次心跳
             
     @staticmethod
     def extract_money_from_des(des):
@@ -108,7 +139,10 @@ class WeChatPayMonitor:
                     money = self.extract_money_from_des(des)
                     if money:
                         logger.info(f"WeChat payment received: {money} CNY")
-                        callback_success = self.app_push(float(money))
+                        if zzmzf:
+                            callback_success = self.zzmzf_push(float(money), config['pid'])
+                        else:
+                            callback_success = self.app_push(float(money))
                         if not callback_success:
                             print(f"回调失败，请检查网络或服务器状态")
                     else:

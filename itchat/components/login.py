@@ -22,37 +22,23 @@ from .contact import update_local_chatrooms, update_local_friends
 from .messages import produce_msg
 
 log = logging.getLogger('itchat')
-
-def load_config():
-    # 获取当前脚本所在目录
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # 构建配置文件的绝对路径
-    config_path = os.path.join(current_dir, '../../config.json')
-
-    # 加载配置
-    try:
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-    except FileNotFoundError:
-        log.error(f"配置文件 '{config_path}' 未找到")
-        raise
-    return config
-
-def send_to_wechat_bot(content, webhook_url):
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "msgtype": "text",
-        "text": {
-            "content": content
-        }
-    }
-    try:
-        response = requests.post(webhook_url, headers=headers, data=json.dumps(data))
-        if response.status_code != 200:
-            log.error(f"Failed to send message to WeChat bot: {response.status_code}, {response.text}")
-    except Exception as e:
-        log.error(f"Error sending message to WeChat bot: {str(e)}")
+def load_send():
+    cur_path = os.path.abspath(os.path.dirname(__file__))
+    notify_path = os.path.join(cur_path, "notify.py")
+    if os.path.exists(notify_path):
+        try:
+            # 使用绝对导入
+            from itchat.components.notify import send
+            return send
+        except ImportError as e:
+            log.error(f"ImportError: {e}")
+            return False
+        except Exception as e:
+            log.error(f"Unexpected error: {e}")
+            return False
+    else:
+        log.error(f"notify.py not found at {notify_path}")
+        return False
 
 def load_login(core):
     core.login = login
@@ -66,7 +52,6 @@ def load_login(core):
 
 
 def login(self, loginCallback=None, exitCallback=None):
-    webhook_url = load_config().get('webhook_url')
 
     if self.alive or self.isLogging:
         log.warning('itchat has already logged in.')
@@ -77,13 +62,29 @@ def login(self, loginCallback=None, exitCallback=None):
         if uuid:
             qr_url = f"https://qrcode-devcxl.pages.dev/?url=https://login.weixin.qq.com/l/{uuid}"
             log.info(qr_url)
-            send_to_wechat_bot(f"已过期，请扫描二维码登录：{qr_url}", webhook_url)
+            send = load_send()
+            if callable(send):
+                send(
+                    "vmq-itchat微信登录已过期",
+                    f"请扫描二维码重新登录：{qr_url}",
+                )
+            else:
+                log.error("\n加载通知服务失败")
+            
         else:
             self.get_QRuuid()
             qr_url = f"https://qrcode-devcxl.pages.dev/?url=https://login.weixin.qq.com/l/{self.uuid}"
             log.info(qr_url)
             log.info('Please scan the QR code to log in.')
-            send_to_wechat_bot(f"请扫描二维码登录：{qr_url}", webhook_url)
+            send = load_send()
+            if callable(send):
+                send(
+                    "vmq-itchat微信登录",
+                    f"请扫描二维码登录：{qr_url}",
+                )
+            else:
+                log.error("\n加载通知服务失败")
+
         isLoggedIn = False
         while not isLoggedIn:
             status = self.check_login()
