@@ -29,6 +29,11 @@ except FileNotFoundError:
 
 paytype = config.get('paytype', 'qrcode')
 zzmzf = config.get('zzmzf', False)
+ssl = config.get('ssl', False)
+if ssl:
+    protocol = 'https'
+else:
+    protocol = 'http'
 
 class WeChatPayMonitor:
     def __init__(self, host, key):
@@ -41,7 +46,7 @@ class WeChatPayMonitor:
     def app_push(self, amount):
         t = str(int(time.time() * 1000))
         sign = self.md5(f"1{amount}{t}{self.key}")
-        url = f"https://{self.host}/appPush?t={t}&type=1&price={amount}&sign={sign}"
+        url = f"{protocol}://{self.host}/appPush?t={t}&type=1&price={amount}&sign={sign}"
         try:
             response = requests.get(url)
             logger.info(f"Push response: {response.text}")
@@ -60,7 +65,7 @@ class WeChatPayMonitor:
     def zzmzf_push(self, amount, pid):
         t = str(int(time.time() * 1000))
         sign = self.md5(f"3{amount}{t}{pid}{self.key}")
-        url = f"https://{self.host}/appPush?type=3&price={amount}&t={t}&pid={pid}&sign={sign}"
+        url = f"{protocol}://{self.host}/appPush?type=3&price={amount}&t={t}&pid={pid}&sign={sign}"
         try:
             response = requests.get(url)
             logger.info(f"Push response: {response.text}")
@@ -80,7 +85,7 @@ class WeChatPayMonitor:
         while True:
             t = str(int(time.time() * 1000))
             sign = self.md5(f"{t}{self.key}")
-            url = f"https://{self.host}/appHeart?t={t}&sign={sign}"
+            url = f"{protocol}://{self.host}/appHeart?t={t}&sign={sign}"
             try:
                 response = requests.get(url, timeout=10)  # 设置请求超时时间为10秒
                 response.raise_for_status()  # 检查请求是否成功

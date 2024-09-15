@@ -48,7 +48,8 @@ services:
 | host    |V免签域名地址（不带http或者https）|
 | key|V免签回调key |
 |paytype|qrcode或者reward（代表普通收款码和赞赏码）|
-|zzmzf|(选填，默认为false)true代表对接至尊码支付  |
+|ssl|true（选填，默认为false）true代表启用https|
+|zzmzf|(选填，默认为false)true代表对接至尊码支付 （我自己测试无法匹配账单，待解决） |
 |pid|（选填）当打开zzmzf后选择对接的通道  |
 
 ### 通知相关
