@@ -50,7 +50,7 @@ PERSONAL_TOKEN = ""  # 初始化为空，稍后在 initialize 中设置
 def send_msg(msg: str, toUserName: str):
     '''发送纯文本消息'''
     try:
-        itchat.send(msg=msg, toUserName=toUserName)
+        itchat.send_msg(msg=msg, toUserName=toUserName)
         log.info(f"发送消息给 {toUserName}: {msg}")
     except Exception as e:
         log.error(f"发送消息失败给 {toUserName}: {e}")
