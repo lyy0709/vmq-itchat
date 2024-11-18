@@ -25,7 +25,7 @@ config_file_path = os.path.normpath(config_file_path)
 
 # 加载配置
 try:
-    with open('config.json', 'r') as f:
+    with open(config_file_path, 'r') as f:
         config = json.load(f)
 except FileNotFoundError:
     logger.error("配置文件 'config.json' 未找到")
