@@ -1,12 +1,29 @@
 # **vmq-itchat**
 
-- vmq-itchat是基于itchat-uos编写的适用于vmq的微信监控，可以较长时间进行微信监控，使用linux即可部署
+- vmq-itchat是基于itchat-uos编写的适用于vmq的微信监控，可以长时间进行微信监控支付回调以及webhook，使用linux即可部署
 
 > 注意！！！
 > - 使用该项目微信账号有被封禁的风险，请使用小号登陆。
 > - 建议不要给太多人高频率使用，可能会导致账号被封禁。
 
 ## 部署
+
+### 建立config
+
+```shell
+mkdir config
+cat > config/config.json << EOF
+{
+    "host": "V免签域名地址",
+    "key": "V免签回调key",
+    "QYWX_KEY": "企业微信机器人key",
+    "paytype": "qrcode",
+    "pid": "9",
+    "models": "all",
+    "webhook_token": "webhook_token"
+}
+EOF
+```
 
 ### Docker(不推荐)
 
@@ -16,7 +33,7 @@ docker run -d --name vmq-itchat \
 lyy0709/vmq-itchat:latest
 ```
 
-### docker-compose(推荐）
+### docker-compose（推荐）
 
 ```yaml
 version: '3.9'
@@ -49,10 +66,9 @@ services:
 | key|V免签回调key |
 |paytype|qrcode或者reward（代表普通收款码和赞赏码）|
 |ssl|true（选填，默认为false）true代表启用https|
-|zzmzf|(选填，默认为false)true代表对接至尊码支付 （我自己测试无法匹配账单，待解决） |
 |pid|（选填）当打开zzmzf后选择对接的通道  |
 |models|all(webhook+zfhd)或者zfhd或者webhook|
-|webhook_token|webhook通知的token|
+|webhook_token|webhook配置通知的token|
 
 ### webhook相关
 - webhook为将个人微信转为webhook通知，使用方法为
@@ -125,8 +141,6 @@ curl --location 'http://localhost:8000/webhook/msg/v2?token=[webhook_token]' \
     }
 ]'
 ```
-
-
 
 ### 通知相关
 

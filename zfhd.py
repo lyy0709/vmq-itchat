@@ -32,7 +32,6 @@ except FileNotFoundError:
     raise
 
 paytype = config.get('paytype', 'qrcode')
-zzmzf = config.get('zzmzf', False)
 ssl = config.get('ssl', False)
 if ssl:
     protocol = 'https'
@@ -64,27 +63,7 @@ class WeChatPayMonitor:
         except Exception as e:
             logger.error(f"Push failed: {e}")
             print(f"回调异常: {str(e)}")
-            return False
-
-    def zzmzf_push(self, amount, pid):
-        t = str(int(time.time() * 1000))
-        sign = self.md5(f"3{amount}{t}{pid}{self.key}")
-        url = f"{protocol}://{self.host}/appPush?type=3&price={amount}&t={t}&pid={pid}&sign={sign}"
-        try:
-            response = requests.get(url)
-            logger.info(f"Push response: {response.text}")
-            response_json = response.json()
-            if response_json.get('code') == 0:
-                print(f"回调成功: 金额 {amount} 元")
-                return True
-            else:
-                print(f"回调失败: {response_json.get('msg', '未知错误')}")
-                return False
-        except Exception as e:
-            logger.error(f"Push failed: {e}")
-            print(f"回调异常: {str(e)}")
-            return False
-        
+            return False  
     def send_heartbeat(self):
         while True:
             t = str(int(time.time() * 1000))
@@ -119,7 +98,6 @@ class WeChatPayMonitor:
                     return match.group(1)
         logger.warning(f"Failed to extract money from des: {des}")
         return None
-    
     def handle_message(self, msg):
         """
         处理所有微信消息，检查支付通知
@@ -148,10 +126,7 @@ class WeChatPayMonitor:
                     money = self.extract_money_from_des(des)
                     if money:
                         logger.info(f"WeChat payment received: {money} CNY")
-                        if zzmzf:
-                            callback_success = self.zzmzf_push(float(money), config['pid'])
-                        else:
-                            callback_success = self.app_push(float(money))
+                        callback_success = self.app_push(float(money))
                         if not callback_success:
                             print(f"回调失败，请检查网络或服务器状态")
                     else:
