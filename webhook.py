@@ -20,7 +20,7 @@ class MessageData(BaseModel):
     content: str
 
 class MessageItem(BaseModel):
-    isRoom: bool
+    isRoom: bool = False
     to: str
     data: Union[MessageData, List[MessageData]]
 
