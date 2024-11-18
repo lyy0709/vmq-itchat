@@ -33,10 +33,10 @@ app = FastAPI()
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 
 def load_or_create_token(config):
-    token = config.get('PERSONAL_TOKEN')
+    token = config.get('webhook_token')
     if not token:
         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-        config['PERSONAL_TOKEN'] = token
+        config['webhook_token'] = token
         with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
         log.info(f"生成新的token: {token}")
