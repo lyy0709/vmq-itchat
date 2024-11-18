@@ -6,7 +6,7 @@ import logging
 import random
 import string
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel
 from typing import List, Union
 import uvicorn
 import itchat
@@ -23,8 +23,8 @@ class MessageItem(BaseModel):
     to: str
     data: Union[MessageData, List[MessageData]]
 
-class WebhookPayload(RootModel[List[MessageItem]]):
-    pass
+class WebhookPayload(BaseModel):
+    __root__: List[MessageItem]
 
 # 初始化FastAPI
 app = FastAPI()
@@ -61,7 +61,7 @@ async def webhook_endpoint(payload: WebhookPayload, token: str = Query(...)):
         log.warning("无效的token访问")
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    for item in payload.model:
+    for item in payload.__root__:  # 修改此处
         to_user = item.to
         data = item.data
         if isinstance(data, list):
