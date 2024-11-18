@@ -6,11 +6,10 @@ import logging
 import random
 import string
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, RootModel
 from typing import List, Union
 import uvicorn
 import itchat
-import time
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -24,8 +23,8 @@ class MessageItem(BaseModel):
     to: str
     data: Union[MessageData, List[MessageData]]
 
-class WebhookPayload(BaseModel):
-    __root__: List[MessageItem]
+class WebhookPayload(RootModel[List[MessageItem]]):
+    pass
 
 # 初始化FastAPI
 app = FastAPI()
@@ -33,17 +32,11 @@ app = FastAPI()
 # 加载或生成token
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 
-def load_or_create_token():
-    if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-    else:
-        config = {}
-    
-    token = config.get('webhook_token')
+def load_or_create_token(config):
+    token = config.get('PERSONAL_TOKEN')
     if not token:
         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
-        config['webhook_token'] = token
+        config['PERSONAL_TOKEN'] = token
         with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
         log.info(f"生成新的token: {token}")
@@ -51,20 +44,24 @@ def load_or_create_token():
         log.info(f"使用现有的token: {token}")
     return token
 
+PERSONAL_TOKEN = ""  # 初始化为空，稍后在initialize中设置
+
 # 定义发送消息的函数
 def send_msg(msg: str, toUserName: str):
-    '''发送纯文本消息
-    '''
-    # 假设已经登录itchat
-    itchat.send(msg=msg, toUserName=toUserName)
-    log.info(f"发送消息给 {toUserName}: {msg}")
+    '''发送纯文本消息'''
+    try:
+        itchat.send(msg=msg, toUserName=toUserName)
+        log.info(f"发送消息给 {toUserName}: {msg}")
+    except Exception as e:
+        log.error(f"发送消息失败给 {toUserName}: {e}")
+
 @app.post("/webhook/msg/v2")
 async def webhook_endpoint(payload: WebhookPayload, token: str = Query(...)):
     if token != PERSONAL_TOKEN:
         log.warning("无效的token访问")
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    for item in payload.__root__:
+    for item in payload.model:
         to_user = item.to
         data = item.data
         if isinstance(data, list):
@@ -75,11 +72,11 @@ async def webhook_endpoint(payload: WebhookPayload, token: str = Query(...)):
     log.info("成功处理Webhook请求")
     return {"status": "success"}
 
+def run_server():
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
 def initialize(config):
     global PERSONAL_TOKEN
     PERSONAL_TOKEN = load_or_create_token(config)
-    itchat.run()
-    # 更新 PERSONAL_TOKEN in the app
-    # Define a new event loop or update the existing one if necessary
     # 启动 FastAPI 服务器
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    run_server()

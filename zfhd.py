@@ -168,7 +168,7 @@ class WeChatPayMonitor:
         # 在每条消息处理后输出判断结果
         print(f"Is this a payment message? {'Yes' if is_payment else 'No'}")
 def initialize(config):
-    monitor = WeChatPayMonitor(host=config.get('host'), key=config.get('key'))
+    monitor = WeChatPayMonitor(host=config.get('host', 'localhost'), key=config.get('key', 'default_key'))
 
     @itchat.msg_register(SHARING, isMpChat=True)
     def text_reply(msg):
@@ -177,10 +177,9 @@ def initialize(config):
         """
         monitor.handle_message(msg)
 
-    logger.info("启动heartbeart线程。")
+    logger.info("启动 heartbeat 线程。")
     heartbeat_thread = threading.Thread(target=monitor.send_heartbeat)
     heartbeat_thread.daemon = True
     heartbeat_thread.start()
 
-    logger.info("开始运行itchat。")
-    itchat.run()
+    logger.info("开始运行 itchat。")
