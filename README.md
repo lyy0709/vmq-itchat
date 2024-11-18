@@ -12,7 +12,7 @@
 
 ```shell
 docker run -d --name vmq-itchat \
--v ${PWD}/config.json:/app/config:json 
+-v ${PWD}/config:/app/config
 lyy0709/vmq-itchat:latest
 ```
 
@@ -25,7 +25,7 @@ services:
         image: lyy0709/vmq-itchat:latest
         container_name: vmq-itchat
         volumes:
-            - ${PWD}/config.json:/app/config.json
+            - ${PWD}/config:/app/config
         restart: unless-stopped
 ```
 
@@ -51,6 +51,13 @@ services:
 |ssl|true（选填，默认为false）true代表启用https|
 |zzmzf|(选填，默认为false)true代表对接至尊码支付 （我自己测试无法匹配账单，待解决） |
 |pid|（选填）当打开zzmzf后选择对接的通道  |
+|models|all(webhook+zfhd)或者zfhd或者webhook|
+|webhook_token|webhook通知的token|
+
+### webhook相关
+- webhook为将个人微信转为webhook通知，使用方法为
+配置反向代理8000端口
+随后向```您的域名/webhook/v2
 
 ### 通知相关
 
