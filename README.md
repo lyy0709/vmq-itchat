@@ -56,8 +56,77 @@ services:
 
 ### webhook相关
 - webhook为将个人微信转为webhook通知，使用方法为
-配置反向代理8000端口
-随后向```您的域名/webhook/v2
+
+#### Example（curl）
+
+##### 发单条消息
+
+```bash
+curl --location 'http://localhost:8000/webhook/msg/v2?token=[webhook_token]' \
+--header 'Content-Type: application/json' \
+--data '{
+    "to": "testUser",
+    "data": { "content": "你好👋" }
+}'
+```
+
+##### 发给群消息
+
+```bash
+curl --location 'http://localhost:8000/webhook/msg/v2?token=[webhook_token]' \
+--header 'Content-Type: application/json' \
+--data '{
+    "to": "testGroup",
+    "isRoom": true,
+    "data": { "content": "hello" },
+}'
+```
+
+##### 同一对象多条消息(群消息同理)
+
+```bash
+curl --location 'http://localhost:8000/webhook/msg/v2?token=[webhook_token]' \
+--header 'Content-Type: application/json' \
+--data '{
+    "to": "testUser",
+    "data": [
+        {
+            "content": "你好👋"
+        },
+        {
+            "content": "hello"
+        }
+    ]
+}'
+```
+
+##### 群发消息
+
+``` bash
+curl --location 'http://localhost:8000/webhook/msg/v2?token=[webhook_token]' \
+--header 'Content-Type: application/json' \
+--data '[
+    {
+        "to": "testUser1",
+        "data": {
+            "content": "你好👋"
+        }
+    },
+    {
+        "to": "testUser2",
+        "data": [
+          {
+            "content": "你好👋"
+          },
+          {
+            "content": "近况如何？"
+          }
+        ]
+    }
+]'
+```
+
+
 
 ### 通知相关
 
