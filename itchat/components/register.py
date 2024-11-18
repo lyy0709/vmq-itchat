@@ -1,29 +1,32 @@
-import logging
-import sys
-import threading
-import traceback
-from functools import wraps
-
+import logging, traceback, sys, threading
 try:
     import Queue
 except ImportError:
     import queue as Queue
-
+import os
+from ..log import set_logging
 from ..utils import test_connect
 from ..storage import templates
 
 logger = logging.getLogger('itchat')
 
-
 def load_register(core):
-    core.auto_login = auto_login
+    core.auto_login       = auto_login
     core.configured_reply = configured_reply
-    core.msg_register = msg_register
-    core.command = command
-    core.run = run
+    core.msg_register     = msg_register
+    core.run              = run
 
+# 获取当前文件的绝对路径
+current_file_path = os.path.abspath(os.path.dirname(__file__))
 
-def auto_login(self, hotReload=False, statusStorageDir='itchat.pkl', loginCallback=None, exitCallback=None):
+# 构建相对路径
+config_file_path = os.path.join(current_file_path, '../../config/itchat.pkl')
+
+# 规范化路径
+config_file_path = os.path.normpath(config_file_path)
+
+def auto_login(self, hotReload=False, statusStorageDir=config_file_path,
+        loginCallback=None, exitCallback=None):
     if not test_connect():
         logger.info("You can't get access to internet or wechat domain, so exit.")
         sys.exit()
@@ -50,44 +53,27 @@ def configured_reply(self):
     except Queue.Empty:
         pass
     else:
-        if msg.get('Content') is not None and msg['Content'].startswith('/'):
-            command_name = msg['Content'].split(' ')[0]
-            func = None
-            if command_name in self.command_functions['friend'].keys() and isinstance(msg['User'], templates.User):
-                func = self.command_functions['friend'][command_name]
-            elif command_name in self.command_functions['group'].keys() and isinstance(msg['User'], templates.Chatroom):
-                func = self.command_functions['group'][command_name]
-            if func is not None:
-                try:
-                    resp = func(msg['Content'], msg['User'])
-                    if resp is not None:
-                        self.send(resp, msg.get('FromUserName'))
-                except ValueError as e:
-                    self.send(str(e), msg.get('FromUserName'))
+        if isinstance(msg['User'], templates.User):
+            replyFn = self.functionDict['FriendChat'].get(msg['Type'])
+        elif isinstance(msg['User'], templates.MassivePlatform):
+            replyFn = self.functionDict['MpChat'].get(msg['Type'])
+        elif isinstance(msg['User'], templates.Chatroom):
+            replyFn = self.functionDict['GroupChat'].get(msg['Type'])
+        if replyFn is None:
+            r = None
         else:
-            if isinstance(msg['User'], templates.User):
-                replyFn = self.functionDict['FriendChat'].get(msg['Type'])
-            elif isinstance(msg['User'], templates.MassivePlatform):
-                replyFn = self.functionDict['MpChat'].get(msg['Type'])
-            elif isinstance(msg['User'], templates.Chatroom):
-                replyFn = self.functionDict['GroupChat'].get(msg['Type'])
-            if replyFn is None:
-                r = None
-            else:
-                try:
-                    r = replyFn(msg)
-                    if r is not None:
-                        self.send(r, msg.get('FromUserName'))
-                except:
-                    logger.warning(traceback.format_exc())
-
+            try:
+                r = replyFn(msg)
+                if r is not None:
+                    self.send(r, msg.get('FromUserName'))
+            except:
+                logger.warning(traceback.format_exc())
 
 def msg_register(self, msgType, isFriendChat=False, isGroupChat=False, isMpChat=False):
     ''' a decorator constructor
         return a specific decorator based on information given '''
     if not (isinstance(msgType, list) or isinstance(msgType, tuple)):
         msgType = [msgType]
-
     def _msg_register(fn):
         for _msgType in msgType:
             if isFriendChat:
@@ -99,43 +85,12 @@ def msg_register(self, msgType, isFriendChat=False, isGroupChat=False, isMpChat=
             if not any((isFriendChat, isGroupChat, isMpChat)):
                 self.functionDict['FriendChat'][_msgType] = fn
         return fn
-
     return _msg_register
-
-
-def command(self, name: str, detail: str, friend: bool = False,
-            group: bool = False):
-    def decorator(func):
-
-        @wraps(func)
-        def wrapper(message: str, *args, **kwargs):
-            if message.startswith(name):
-                if message[len(name):].strip() == "help":
-                    raise ValueError(f"{detail}")
-                # 截断命令名，只传递剩余的消息部分给函数
-                return func(message[len(name):].strip().split(" "), *args, **kwargs)
-            else:
-                # 如果消息不是以命令名开始，可以抛出异常或返回特定值
-                raise ValueError(f"Message does not start with the command name '{name}'")
-
-        # 保存命令名作为函数的一个属性
-        setattr(wrapper, 'command_name', name)
-        # 好友回复
-        if friend:
-            self.command_functions['friend'][name] = wrapper
-        # 群组回复
-        if group:
-            self.command_functions['group'][name] = wrapper
-        return wrapper
-
-    return decorator
-
 
 def run(self, debug=False, blockThread=True):
     logger.info('Start auto replying.')
     if debug:
-        logger.setLevel(level=logging.DEBUG)
-
+        set_logging(loggingLevel=logging.DEBUG)
     def reply_fn():
         try:
             while self.alive:
@@ -146,7 +101,6 @@ def run(self, debug=False, blockThread=True):
             self.alive = False
             logger.debug('itchat received an ^C and exit.')
             logger.info('Bye~')
-
     if blockThread:
         reply_fn()
     else:

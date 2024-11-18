@@ -20,6 +20,7 @@ class MessageData(BaseModel):
     content: str
 
 class MessageItem(BaseModel):
+    isRoom: bool
     to: str
     data: Union[MessageData, List[MessageData]]
 
@@ -29,15 +30,20 @@ class WebhookPayload(RootModel[List[MessageItem]]):
 # 初始化 FastAPI
 app = FastAPI()
 
-# 加载或生成 token
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+
+# 构建相对路径
+config_file_path = os.path.join(current_file_path, './config/config.json')
+
+# 规范化路径
+config_file_path = os.path.normpath(config_file_path)
 
 def load_or_create_token(config):
     token = config.get('webhook_token')
     if not token:
         token = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
         config['webhook_token'] = token
-        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+        with open(config_file_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
         log.info(f"生成新的 token: {token}")
     else:
@@ -46,15 +52,6 @@ def load_or_create_token(config):
 
 PERSONAL_TOKEN = ""  # 初始化为空，稍后在 initialize 中设置
 
-# 定义发送消息的函数
-def send_msg(msg: str, toUserName: str):
-    '''发送纯文本消息'''
-    try:
-        itchat.send_msg(msg=msg, toUserName=toUserName)
-        log.info(f"发送消息给 {toUserName}: {msg}")
-    except Exception as e:
-        log.error(f"发送消息失败给 {toUserName}: {e}")
-
 @app.post("/webhook/msg/v2")
 async def webhook_endpoint(payload: WebhookPayload, token: str = Query(...)):
     if token != PERSONAL_TOKEN:
@@ -62,13 +59,23 @@ async def webhook_endpoint(payload: WebhookPayload, token: str = Query(...)):
         raise HTTPException(status_code=401, detail="Unauthorized")
     
     for item in payload.root:  # 使用 payload.root 访问数据
-        to_user = item.to
-        data = item.data
-        if isinstance(data, list):
-            for msg in data:
-                send_msg(msg.content, to_user)
+        isroom = item.isRoom
+        if isroom:
+            to_room = item.to
+            data = item.data
+            if isinstance(data, list):
+                for msg in data:
+                    itchat.search_chatrooms(name=to_room)[0].send(msg.content)
+            else:
+                itchat.search_chatrooms(name=to_room)[0].send(data.content)
         else:
-            send_msg(data.content, to_user)
+            to_user = item.to
+            data = item.data
+            if isinstance(data, list):
+                for msg in data:
+                    itchat.search_friends(nickName=to_user)[0].send(msg.content) 
+            else:
+                itchat.search_friends(nickName=to_user)[0].send(data.content)
     log.info("成功处理 Webhook 请求")
     return {"status": "success"}
 

@@ -1,4 +1,4 @@
-import re, os, sys, subprocess, copy, traceback, logging, hashlib
+import re, os, sys, subprocess, copy, traceback, logging
 
 try:
     from HTMLParser import HTMLParser
@@ -41,6 +41,9 @@ for k in ('UniFriend', 'Sex', 'AppAccountFlag', 'VerifyFlag', 'ChatRoomId', 'Hid
     friendInfoTemplate[k] = 0
 friendInfoTemplate['MemberList'] = []
 
+def clear_screen():
+    os.system('cls' if config.OS == 'Windows' else 'clear')
+
 def emoji_formatter(d, k):
     ''' _emoji_deebugger is for bugs about emoji match caused by wechat backstage
     like :face with tears of joy: will be replaced with :cat face with tears of joy:
@@ -81,6 +84,27 @@ def check_file(fileDir):
         return True
     except:
         return False
+
+def print_qr(fileDir):
+    if config.OS == 'Darwin':
+        subprocess.call(['open', fileDir])
+    elif config.OS == 'Linux':
+        subprocess.call(['xdg-open', fileDir])
+    else:
+        os.startfile(fileDir)
+
+def print_cmd_qr(qrText, white=BLOCK, black='  ', enableCmdQR=True):
+    blockCount = int(enableCmdQR)
+    if abs(blockCount) == 0:
+        blockCount = 1
+    white *= abs(blockCount)
+    if blockCount < 0:
+        white, black = black, white
+    sys.stdout.write(' '*50 + '\r')
+    sys.stdout.flush()
+    qr = qrText.replace('0', white).replace('1', black)
+    sys.stdout.write(qr)
+    sys.stdout.flush()
 
 def struct_friend_info(knownInfo):
     member = copy.deepcopy(friendInfoTemplate)
@@ -137,9 +161,3 @@ def update_info_dict(oldInfoDict, newInfoDict):
             pass # these values will be updated somewhere else
         elif oldInfoDict.get(k) is None or v not in (None, '', '0', 0):
             oldInfoDict[k] = v
-
-def calculate_md5(text):
-    """Calculate the MD5 hash of a text."""
-    md5_hash = hashlib.md5()
-    md5_hash.update(text.encode('utf-8'))
-    return md5_hash.hexdigest()

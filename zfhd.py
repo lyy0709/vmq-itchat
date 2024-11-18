@@ -15,10 +15,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # 获取当前脚本所在目录
-current_dir = os.path.dirname(os.path.abspath(__file__))
+current_file_path = os.path.abspath(os.path.dirname(__file__))
 
-# 构建配置文件的绝对路径
-config_path = os.path.join(current_dir, 'config.json')
+# 构建相对路径
+config_file_path = os.path.join(current_file_path, './config/config.json')
+
+# 规范化路径
+config_file_path = os.path.normpath(config_file_path)
+
 # 加载配置
 try:
     with open('config.json', 'r') as f:

@@ -4,7 +4,7 @@ services:
         image: lyy0709/vmq-itchat:latest
         container_name: vmq-itchat
         volumes:
-            - ${PWD}/config.json/:/app/config.json
+            - ${PWD}/config:/app/config
         ports:
             - 8000:8000
         restart: unless-stopped

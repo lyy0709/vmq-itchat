@@ -1,13 +1,13 @@
-import io
-import json
-import logging
 import os
-import random
-import re
-import threading
 import time
+import re
+import io
+import threading
+import json
+import xml.dom.minidom
+import random
 import traceback
-
+import logging
 try:
     from httplib import BadStatusLine
 except ImportError:
@@ -21,7 +21,7 @@ from ..storage.templates import wrap_user_dict
 from .contact import update_local_chatrooms, update_local_friends
 from .messages import produce_msg
 
-log = logging.getLogger('itchat')
+logger = logging.getLogger('itchat')
 def load_send():
     cur_path = os.path.abspath(os.path.dirname(__file__))
     notify_path = os.path.join(cur_path, "notify.py")
@@ -31,13 +31,13 @@ def load_send():
             from itchat.components.notify import send
             return send
         except ImportError as e:
-            log.error(f"ImportError: {e}")
+            logger.error(f"ImportError: {e}")
             return False
         except Exception as e:
-            log.error(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return False
     else:
-        log.error(f"notify.py not found at {notify_path}")
+        logger.error(f"notify.py not found at {notify_path}")
         return False
 
 def load_login(core):
@@ -54,14 +54,14 @@ def load_login(core):
 def login(self, loginCallback=None, exitCallback=None):
 
     if self.alive or self.isLogging:
-        log.warning('itchat has already logged in.')
+        logger.warning('itchat has already logged in.')
         return
     self.isLogging = True
     while self.isLogging:
         uuid = push_login(self)
         if uuid:
             qr_url = f"https://qrcode-devcxl.pages.dev/?url=https://login.weixin.qq.com/l/{uuid}"
-            log.info(qr_url)
+            logger.info(qr_url)
             send = load_send()
             if callable(send):
                 send(
@@ -69,13 +69,13 @@ def login(self, loginCallback=None, exitCallback=None):
                     f"请扫描二维码重新登录：{qr_url}",
                 )
             else:
-                log.error("\n加载通知服务失败")
+                logger.error("\n加载通知服务失败")
             
         else:
             self.get_QRuuid()
             qr_url = f"https://qrcode-devcxl.pages.dev/?url=https://login.weixin.qq.com/l/{self.uuid}"
-            log.info(qr_url)
-            log.info('Please scan the QR code to log in.')
+            logger.info(qr_url)
+            logger.info('Please scan the QR code to log in.')
             send = load_send()
             if callable(send):
                 send(
@@ -83,7 +83,7 @@ def login(self, loginCallback=None, exitCallback=None):
                     f"请扫描二维码登录：{qr_url}",
                 )
             else:
-                log.error("\n加载通知服务失败")
+                logger.error("\n加载通知服务失败")
 
         isLoggedIn = False
         while not isLoggedIn:
@@ -92,7 +92,7 @@ def login(self, loginCallback=None, exitCallback=None):
                 isLoggedIn = True
             elif status == '201':
                 if isLoggedIn is not None:
-                    log.info('Please press confirm on your phone.')
+                    logger.info('Please press confirm on your phone.')
                     isLoggedIn = None
                 time.sleep(0.5)
             elif status != '408':
@@ -100,17 +100,17 @@ def login(self, loginCallback=None, exitCallback=None):
         if isLoggedIn:
             break
         elif self.isLogging:
-            log.info('Log in time out, reloading QR code.')
+            logger.info('Log in time out, reloading QR code.')
     else:
         return  # log in process is stopped by user
-    log.info('Loading the contact, this may take a little while.')
+    logger.info('Loading the contact, this may take a little while.')
     self.web_init()
     self.show_mobile_login()
     self.get_contact(True)
     if hasattr(loginCallback, '__call__'):
         r = loginCallback()
     else:
-        log.info('Login successfully as %s' % self.storageClass.nickName)
+        logger.info('Login successfully as %s' % self.storageClass.nickName)
     self.start_receiving(exitCallback)
     self.isLogging = False
 
@@ -221,7 +221,7 @@ def process_login_info(core, loginContent):
     #     elif node.nodeName == 'pass_ticket':
     #         core.loginInfo['pass_ticket'] = core.loginInfo['BaseRequest']['DeviceID'] = node.childNodes[0].data
     if not all([key in core.loginInfo for key in ('skey', 'wxsid', 'wxuin', 'pass_ticket')]):
-        log.error(
+        logger.error(
             'Your wechat account may be LIMITED to log in WEB wechat, error info:\n%s' % r.text)
         core.isLogging = False
         return False
@@ -302,9 +302,7 @@ def start_receiving(self, exitCallback=None, getReceivingFnOnly=False):
                     if msgList:
                         msgList = produce_msg(self, msgList)
                         for msg in msgList:
-                            if not self.storageClass.history_check(msg['MsgId']):
-                                self.storageClass.append_history(msg['MsgId'])
-                                self.msgList.put(msg)
+                            self.msgList.put(msg)
                     if contactList:
                         chatroomList, otherList = [], []
                         for contact in contactList:
@@ -322,7 +320,7 @@ def start_receiving(self, exitCallback=None, getReceivingFnOnly=False):
                 pass
             except:
                 retryCount += 1
-                log.error(traceback.format_exc())
+                logger.error(traceback.format_exc())
                 if self.receivingRetryCount < retryCount:
                     self.alive = False
                 else:
@@ -331,8 +329,7 @@ def start_receiving(self, exitCallback=None, getReceivingFnOnly=False):
         if hasattr(exitCallback, '__call__'):
             exitCallback()
         else:
-            log.info('LOG OUT!')
-
+            logger.info('LOG OUT!')
     if getReceivingFnOnly:
         return maintain_loop
     else:
@@ -371,7 +368,7 @@ def sync_check(self):
     regx = r'window.synccheck={retcode:"(\d+)",selector:"(\d+)"}'
     pm = re.search(regx, r.text)
     if pm is None or pm.group(1) != '0':
-        log.debug('Unexpected sync check result: %s' % r.text)
+        logger.debug('Unexpected sync check result: %s' % r.text)
         return None
     return pm.group(2)
 

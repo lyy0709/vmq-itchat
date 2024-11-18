@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("app")
 
 def load_config():
-    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+    config_path = os.path.join(os.path.dirname(__file__), './config/config.json')
     if not os.path.exists(config_path):
         log.error("config.json 文件不存在。")
         sys.exit(1)

@@ -2,7 +2,6 @@ import requests
 
 from . import storage
 
-
 class Core(object):
     def __init__(self):
         ''' init is the only method defined in core.py
@@ -22,14 +21,11 @@ class Core(object):
         self.chatroomList = self.storageClass.chatroomList
         self.msgList = self.storageClass.msgList
         self.loginInfo = {}
-        self.lang = 'zh_CN'
         self.s = requests.Session()
         self.uuid = None
         self.functionDict = {'FriendChat': {}, 'GroupChat': {}, 'MpChat': {}}
-        self.command_functions = {'friend': {}, 'group': {}}
         self.useHotReload, self.hotReloadDir = False, 'itchat.pkl'
         self.receivingRetryCount = 5
-
     def login(self, loginCallback=None, exitCallback=None):
         ''' log in like web wechat does
             for log in
@@ -37,6 +33,10 @@ class Core(object):
                 - then scanning status is logged, it paused for you confirm
                 - finally it logged in and show your nickName
             for options
+                - enableCmdQR: show qrcode in command line
+                    - integers can be used to fit strange char length
+                - picDir: place for storing qrcode
+                - qrCallback: method that should accept uuid, status, qrcode
                 - loginCallback: callback after successfully logged in
                     - if not set, screen is cleared and qrcode is deleted
                 - exitCallback: callback after logged out
@@ -53,7 +53,6 @@ class Core(object):
                 - and modified according to your own demand
         '''
         raise NotImplementedError()
-
     def get_QRuuid(self):
         ''' get uuid for qrcode
             uuid is the symbol of qrcode
@@ -84,7 +83,6 @@ class Core(object):
             it is defined in components/login.py
         '''
         raise NotImplementedError()
-
     def web_init(self):
         ''' get info necessary for initializing
             for processing:
@@ -95,7 +93,6 @@ class Core(object):
             it is defined in components/login.py
         '''
         raise NotImplementedError()
-
     def show_mobile_login(self):
         ''' show web wechat login sign
             the sign is on the top of mobile phone wechat
@@ -103,7 +100,6 @@ class Core(object):
             it is defined in components/login.py
         '''
         raise NotImplementedError()
-
     def start_receiving(self, exitCallback=None, getReceivingFnOnly=False):
         ''' open a thread for heart loop and receiving messages
             for options:
@@ -116,7 +112,6 @@ class Core(object):
             it is defined in components/login.py
         '''
         raise NotImplementedError()
-
     def get_msg(self):
         ''' fetch messages
             for fetching
@@ -127,7 +122,6 @@ class Core(object):
             it is defined in components/login.py
         '''
         raise NotImplementedError()
-
     def logout(self):
         ''' logout
             if core is now alive
@@ -136,7 +130,6 @@ class Core(object):
             it is defined in components/login.py
         '''
         raise NotImplementedError()
-
     def update_chatroom(self, userName, detailedMember=False):
         ''' update chatroom
             for chatroom contact
@@ -151,7 +144,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def update_friend(self, userName):
         ''' update chatroom
             for friend contact
@@ -161,7 +153,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def get_contact(self, update=False):
         ''' fetch part of contact
             for part
@@ -174,7 +165,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def get_friends(self, update=False):
         ''' fetch friends list
             for options
@@ -184,7 +174,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def get_chatrooms(self, update=False, contactOnly=False):
         ''' fetch chatrooms list
             for options
@@ -195,7 +184,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def get_mps(self, update=False):
         ''' fetch massive platforms list
             for options
@@ -205,7 +193,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def set_alias(self, userName, alias):
         ''' set alias for a friend
             for options
@@ -214,7 +201,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def set_pinned(self, userName, isPinned=True):
         ''' set pinned for a friend or a chatroom
             for options
@@ -223,8 +209,7 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
-    def accept_friend(self, userName, v4, autoUpdate=True):
+    def accept_friend(self, userName, v4,autoUpdate=True):
         ''' accept a friend or accept a friend
             for options
                 - userName: 'UserName' for friend's info dict
@@ -236,7 +221,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def get_head_img(self, userName=None, chatroomUserName=None, picDir=None):
         ''' place for docs
             for options
@@ -246,7 +230,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def create_chatroom(self, memberList, topic=''):
         ''' create a chatroom
             for creating
@@ -257,7 +240,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def set_chatroom_name(self, chatroomUserName, name):
         ''' set chatroom name
             for setting
@@ -269,7 +251,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def delete_member_from_chatroom(self, chatroomUserName, memberList):
         ''' deletes members from chatroom
             for deleting
@@ -282,9 +263,8 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def add_member_into_chatroom(self, chatroomUserName, memberList,
-                                 useInvitation=False):
+            useInvitation=False):
         ''' add members into chatroom
             for adding
                 - you can't add yourself or member already in chatroom
@@ -298,7 +278,6 @@ class Core(object):
             it is defined in components/contact.py
         '''
         raise NotImplementedError()
-
     def send_raw_msg(self, msgType, content, toUserName):
         ''' many messages are sent in a common way
             for demo
@@ -313,7 +292,6 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def send_msg(self, msg='Test Message', toUserName=None):
         ''' send plain text message
             for options
@@ -322,9 +300,8 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def upload_file(self, fileDir, isPicture=False, isVideo=False,
-                    toUserName='filehelper', file_=None, preparedFile=None):
+            toUserName='filehelper', file_=None, preparedFile=None):
         ''' upload file to server and get mediaId
             for options
                 - fileDir: dir for file ready for upload
@@ -336,7 +313,6 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def send_file(self, fileDir, toUserName=None, mediaId=None, file_=None):
         ''' send attachment
             for options
@@ -347,7 +323,6 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def send_image(self, fileDir=None, toUserName=None, mediaId=None, file_=None):
         ''' send image
             for options
@@ -359,7 +334,6 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def send_video(self, fileDir=None, toUserName=None, mediaId=None, file_=None):
         ''' send video
             for options
@@ -371,7 +345,6 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def send(self, msg, toUserName=None, mediaId=None):
         ''' wrapped function for all the sending functions
             for options
@@ -384,7 +357,6 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def revoke(self, msgId, toUserName, localId=None):
         ''' revoke message with its and msgId
             for options
@@ -394,7 +366,6 @@ class Core(object):
             it is defined in components/messages.py
         '''
         raise NotImplementedError()
-
     def dump_login_status(self, fileDir=None):
         ''' dump login status to a specific file
             for option
@@ -402,9 +373,8 @@ class Core(object):
             it is defined in components/hotreload.py
         '''
         raise NotImplementedError()
-
     def load_login_status(self, fileDir,
-                          loginCallback=None, exitCallback=None):
+            loginCallback=None, exitCallback=None):
         ''' load login status from a specific file
             for option
                 - fileDir: file for loading login status
@@ -415,8 +385,8 @@ class Core(object):
             it is defined in components/hotreload.py
         '''
         raise NotImplementedError()
-
-    def auto_login(self, hotReload=False, statusStorageDir='itchat.pkl',loginCallback=None, exitCallback=None):
+    def auto_login(self, hotReload=False, statusStorageDir='../../config/itchat.pkl',
+            loginCallback=None, exitCallback=None):
         ''' log in like web wechat does
             for log in
                 - a QR code will be downloaded and opened
@@ -441,7 +411,6 @@ class Core(object):
                 - and modified according to your own demond
         '''
         raise NotImplementedError()
-
     def configured_reply(self):
         ''' determine the type of message and reply if its method is defined
             however, I use a strange way to determine whether a msg is from massive platform
@@ -450,29 +419,12 @@ class Core(object):
             If you have any good idea, pleeeease report an issue. I will be more than grateful.
         '''
         raise NotImplementedError()
-
     def msg_register(self, msgType,
-                     isFriendChat=False, isGroupChat=False, isMpChat=False):
+            isFriendChat=False, isGroupChat=False, isMpChat=False):
         ''' a decorator constructor
             return a specific decorator based on information given
         '''
         raise NotImplementedError()
-
-    def command(self, name: str, detail: str,
-                friend: bool = False,
-                group: bool = False
-                ):
-        """
-        命令装饰器
-        :param self
-        :param name: 命令名称
-        :param detail: 命令详情
-        :param friend: 是否在好友对话中使用
-        :param group: 是否在群组对话中启用
-        :return:
-        """
-        raise NotImplementedError
-
     def run(self, debug=True, blockThread=True):
         ''' start auto respond
             for option
@@ -480,14 +432,11 @@ class Core(object):
             it is defined in components/register.py
         '''
         raise NotImplementedError()
-
     def search_friends(self, name=None, userName=None, remarkName=None, nickName=None,
-                       wechatAccount=None):
+            wechatAccount=None):
         return self.storageClass.search_friends(name, userName, remarkName,
-                                                nickName, wechatAccount)
-
+            nickName, wechatAccount)
     def search_chatrooms(self, name=None, userName=None):
         return self.storageClass.search_chatrooms(name, userName)
-
     def search_mps(self, name=None, userName=None):
         return self.storageClass.search_mps(name, userName)
