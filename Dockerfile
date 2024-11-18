@@ -11,7 +11,7 @@ COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 暴露应用程序端口（如果有）
-# EXPOSE 8000
+EXPOSE 8000
 
 # 运行应用程序
-CMD ["python", "zfhd.py"]
+CMD ["python", "app.py"]
