@@ -6,7 +6,7 @@ import logging
 import random
 import string
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 from typing import List, Union
 import uvicorn
 import itchat
@@ -15,7 +15,7 @@ import itchat
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("webhook")
 
-# 定义Pydantic模型
+# 定义 Pydantic 模型
 class MessageData(BaseModel):
     content: str
 
@@ -23,13 +23,13 @@ class MessageItem(BaseModel):
     to: str
     data: Union[MessageData, List[MessageData]]
 
-class WebhookPayload(BaseModel):
-    __root__: List[MessageItem]
+class WebhookPayload(RootModel[List[MessageItem]]):
+    pass
 
-# 初始化FastAPI
+# 初始化 FastAPI
 app = FastAPI()
 
-# 加载或生成token
+# 加载或生成 token
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 
 def load_or_create_token(config):
@@ -39,12 +39,12 @@ def load_or_create_token(config):
         config['webhook_token'] = token
         with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
-        log.info(f"生成新的token: {token}")
+        log.info(f"生成新的 token: {token}")
     else:
-        log.info(f"使用现有的token: {token}")
+        log.info(f"使用现有的 token: {token}")
     return token
 
-PERSONAL_TOKEN = ""  # 初始化为空，稍后在initialize中设置
+PERSONAL_TOKEN = ""  # 初始化为空，稍后在 initialize 中设置
 
 # 定义发送消息的函数
 def send_msg(msg: str, toUserName: str):
@@ -58,10 +58,10 @@ def send_msg(msg: str, toUserName: str):
 @app.post("/webhook/msg/v2")
 async def webhook_endpoint(payload: WebhookPayload, token: str = Query(...)):
     if token != PERSONAL_TOKEN:
-        log.warning("无效的token访问")
+        log.warning("无效的 token 访问")
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    for item in payload.__root__:  # 修改此处
+    for item in payload.root:  # 使用 payload.root 访问数据
         to_user = item.to
         data = item.data
         if isinstance(data, list):
@@ -69,7 +69,7 @@ async def webhook_endpoint(payload: WebhookPayload, token: str = Query(...)):
                 send_msg(msg.content, to_user)
         else:
             send_msg(data.content, to_user)
-    log.info("成功处理Webhook请求")
+    log.info("成功处理 Webhook 请求")
     return {"status": "success"}
 
 def run_server():
