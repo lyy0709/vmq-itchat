@@ -164,5 +164,5 @@ def initialize(config):
     heartbeat_thread = threading.Thread(target=monitor.send_heartbeat)
     heartbeat_thread.daemon = True
     heartbeat_thread.start()
-
+    itchat.run()
     logger.info("开始运行 itchat。")
