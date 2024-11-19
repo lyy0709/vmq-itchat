@@ -64,6 +64,7 @@ class WeChatPayMonitor:
             logger.error(f"Push failed: {e}")
             print(f"回调异常: {str(e)}")
             return False  
+            
     def send_heartbeat(self):
         while True:
             t = str(int(time.time() * 1000))
@@ -98,6 +99,7 @@ class WeChatPayMonitor:
                     return match.group(1)
         logger.warning(f"Failed to extract money from des: {des}")
         return None
+        
     def handle_message(self, msg):
         """
         处理所有微信消息，检查支付通知
